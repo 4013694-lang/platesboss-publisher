@@ -10,6 +10,120 @@
 <h1>PlatesBoss Publisher</h1>
 <p>PlatesBoss Publisher is a personal publishing tool used by a paper tableware factory owner in China to post his own factory videos to his own TikTok account through TikTok's official Content Posting API.</p>
 <p>The owner prepares a video, caption and hashtags, signs in with his own TikTok account, and publishes — no manual uploading in the TikTok app needed.</p>
+
+<section id="platesboss-connect" style="margin:32px 0">
+  <p>
+    <a id="pb-connect-btn" href="#" role="button"
+       style="display:inline-block;background:#fe2c55;color:#fff;
+              padding:12px 26px;font-size:17px;border-radius:6px;
+              text-decoration:none">
+      Connect TikTok
+    </a>
+  </p>
+  <p style="color:#666;font-size:14px">
+    Connect your TikTok account to publish your videos with
+    PlatesBoss Publisher.
+  </p>
+
+  <div id="pb-callback" style="display:none;border:2px solid #25a244;
+       border-radius:10px;padding:18px;margin-top:20px;max-width:720px">
+    <h2 style="margin-top:0">Authorization code received</h2>
+    <p>Copy this code into the PlatesBoss Publisher tool (Step 1) to
+       finish connecting. Codes are single-use — paste it promptly.</p>
+    <p style="margin-bottom:4px"><strong>Authorization code</strong></p>
+    <textarea id="pb-code" readonly rows="3"
+      style="width:100%;box-sizing:border-box;font-family:monospace;
+             font-size:13px;padding:8px"></textarea>
+    <p>
+      <button id="pb-copy" type="button"
+        style="background:#161823;color:#fff;border:0;padding:9px 18px;
+               border-radius:6px;cursor:pointer">Copy code</button>
+      <span id="pb-copied" style="color:#25a244;margin-left:8px"></span>
+    </p>
+    <p style="margin-bottom:2px"><strong>Granted scopes</strong></p>
+    <p id="pb-scopes" style="font-family:monospace;font-size:13.5px"></p>
+    <p style="margin-bottom:2px"><strong>State</strong></p>
+    <p id="pb-state" style="font-family:monospace;font-size:13.5px"></p>
+  </div>
+
+  <div id="pb-error" style="display:none;border:2px solid #d33;
+       border-radius:10px;padding:18px;margin-top:20px;max-width:720px">
+    <h2 style="margin-top:0">Authorization was not completed</h2>
+    <p id="pb-error-text" style="font-family:monospace;font-size:13.5px"></p>
+  </div>
+</section>
+
+<script>
+(function () {
+  var CLIENT_KEY = "sbaw6sw6cgjqyq9ohv";
+  var REDIRECT_URI = "https://4013694-lang.github.io/platesboss-publisher/";
+  var SCOPES = "user.info.basic,video.upload,video.publish";
+
+  function randomState() {
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    var out = "";
+    var buf = new Uint32Array(24);
+    window.crypto.getRandomValues(buf);
+    for (var i = 0; i < buf.length; i++) out += chars[buf[i] % chars.length];
+    return out;
+  }
+
+  var btn = document.getElementById("pb-connect-btn");
+  var state = randomState();
+  try { sessionStorage.setItem("pb_oauth_state", state); } catch (e) {}
+  var params = new URLSearchParams();
+  params.set("client_key", CLIENT_KEY);
+  params.set("response_type", "code");
+  params.set("scope", SCOPES);
+  params.set("redirect_uri", REDIRECT_URI);
+  params.set("state", state);
+  params.set("disable_auto_auth", "1");
+  btn.href = "https://www.tiktok.com/v2/auth/authorize/?" + params.toString();
+
+  var q = new URLSearchParams(window.location.search);
+  var code = q.get("code");
+  var error = q.get("error");
+  if (error) {
+    document.getElementById("pb-error").style.display = "block";
+    document.getElementById("pb-error-text").textContent =
+      error + (q.get("error_description")
+        ? " — " + q.get("error_description") : "");
+    return;
+  }
+  if (code) {
+    var box = document.getElementById("pb-callback");
+    box.style.display = "block";
+    document.getElementById("pb-code").value = code;
+    document.getElementById("pb-scopes").textContent =
+      q.get("scopes") || q.get("scope") || "(not reported)";
+    var returnedState = q.get("state") || "";
+    var expected = "";
+    try { expected = sessionStorage.getItem("pb_oauth_state") || ""; } catch (e) {}
+    document.getElementById("pb-state").textContent =
+      returnedState + (expected
+        ? (returnedState === expected
+            ? "  ✓ matches the state sent with the request"
+            : "  ⚠ DOES NOT MATCH the sent state — do not use this code")
+        : "");
+    document.getElementById("pb-copy").addEventListener("click", function () {
+      var ta = document.getElementById("pb-code");
+      ta.select();
+      function done() {
+        document.getElementById("pb-copied").textContent = "Copied.";
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(ta.value).then(done, function () {
+          document.execCommand("copy"); done();
+        });
+      } else {
+        document.execCommand("copy"); done();
+      }
+    });
+    box.scrollIntoView();
+  }
+})();
+</script>
+
 <p>
 <a href="privacy-policy.html">Privacy Policy</a> ·
 <a href="terms-of-service.html">Terms of Service</a>
